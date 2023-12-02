@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sua Página de Login</title>
+    <!-- Adicione seus links de estilo, scripts, etc. aqui -->
+</head>
+<body>
+
+
+<div class="login">
+    <form id="loginForm">
+        <label for="login_input">Nome de Usuário:</label>
+        <input type="text" class="login_input" id="login_input" required>
+        <button type="submit" class="input_button">Entrar</button>
+    </form>
+</div>
+
+<div class="chat" style="display: none;">
+    <form id="chatForm">
+        <label for="chat_input">Mensagem:</label>
+        <input type="text" class="chat_input" id="chat_input" required>
+        <button type="submit" class="chat_button">Enviar</button>
+    </form>
+    <div class="mensagens"></div>
+ 
+</div>
+
+<script>
+    var login_info = document.getElementsByClassName("login")[0];
+    var login_input = document.getElementsByClassName("login_input")[0];
+    var login_button = document.getElementsByClassName("input_button")[0];
+    var chat_info = document.getElementsByClassName("chat")[0];
+    var chat_txt = document.getElementsByClassName("chat_input")[0];
+    var chat_button = document.getElementsByClassName("chat_button")[0];
+    var chat_mensagem = document.getElementsByClassName("mensagens")[0];
+
+    var span = document.getElementsByClassName("uname")[0];
+    var um = document.getElementsByClassName("recebida")[0];
+
+    let websocket;
+
+    const user = { id: "", nome: "" };
+
+    const criarmensagemrecebida = (contendo) => {
+        const div = document.createElement("div");
+        div.classList.add("recebida");
+        div.innerHTML = contendo;
+        return div;
+    };
+
+    const criarmensagemenviada = (contendo, username) => {
+        const div = document.createElement("div");
+        const span = document.createElement("span")
+
+        div.classList.add("mensagemrecebida")
+        span.classList.add("nome")
+
+        div.appendChild(span)
+
+        span.innerHTML = username;
+        div.innerHTML += contendo;
+        return div;
+    };
+
+    const Mensagem_processada = ({ data }) => {
+        const { userid, username, conteudo } = JSON.parse(data);
+        const element = criarmensagemenviada(conteudo);
+        chat_mensagem.appendChild(element);
+    };
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        user.id = crypto.randomUUID();
+        user.nome = login_input.value;
+        login_info.style.display = "none";
+        chat_info.style.display = "flex";
+        websocket = new WebSocket("ws://localhost:8080");
+        websocket.onopen = () => websocket.send(`O usuário ${user.nome} entrou`);
+        websocket.onmessage = Mensagem_processada;
+        console.log(user);
+    };
+
+    const sendMensagem = (event) => {
+        event.preventDefault();
+        const mensagem = {
+            userid: user.id,
+            username: user.nome,
+            conteudo: chat_txt.value
+        };
+        websocket.send(JSON.stringify(mensagem));
+        console.log(`O usuário ${mensagem.username} enviou a mensagem "${mensagem.conteudo}"`);
+        chat_txt.value = "";
+    };
+
+    login_button.addEventListener("click", handleSubmit);
+    chat_button.addEventListener("click", sendMensagem);
+</script>
+</body>
+</html>
